@@ -1,6 +1,4 @@
 # BaseFundAI
-Decentralized micro-funding infrastructure protocol
-# BaseFundAI
 
 Decentralized Micro-Funding Infrastructure Protocol on Base
 
