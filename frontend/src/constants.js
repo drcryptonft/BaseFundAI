@@ -1,2 +1,0 @@
-export const PLATFORM_WALLET =
-  "0x736824756b5cea6fc8bc6446f27052cf182feb4a";
