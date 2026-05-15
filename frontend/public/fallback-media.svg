@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Campaign media placeholder</title>
+  <desc id="desc">Decorative placeholder shown when a campaign preview image is unavailable.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#134e4a"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.16)"/>
+      <stop offset="100%" stop-color="rgba(148,163,184,0.08)"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1280" cy="170" r="190" fill="rgba(56,189,248,0.14)"/>
+  <circle cx="300" cy="720" r="240" fill="rgba(16,185,129,0.12)"/>
+  <rect x="180" y="160" width="1240" height="580" rx="42" fill="url(#card)" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+  <rect x="250" y="240" width="1100" height="360" rx="30" fill="rgba(15,23,42,0.54)" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <path d="M432 540l160-170c18-19 48-20 67-3l123 110 96-94c20-20 53-18 71 5l143 178H432z" fill="rgba(255,255,255,0.16)"/>
+  <circle cx="1030" cy="355" r="48" fill="rgba(255,255,255,0.18)"/>
+  <text x="800" y="680" text-anchor="middle" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="52" font-weight="700">
+    Campaign media preview
+  </text>
+  <text x="800" y="732" text-anchor="middle" fill="rgba(226,232,240,0.72)" font-family="Arial, sans-serif" font-size="28">
+    Media is still loading or was not added to this campaign.
+  </text>
+</svg>

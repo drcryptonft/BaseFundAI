@@ -1,44 +1,60 @@
 # BaseFundAI
 
-Decentralized Micro-Funding Infrastructure Protocol on Base
+BaseFundAI is a trust-aware, non-custodial crowdfunding app for real-world needs.
+It lets creators launch transparent onchain campaigns and lets contributors fund
+them directly from their wallets using stable assets on supported public testnets.
 
-## Overview
+Live public testnet: https://basefundai.tech
 
-BaseFundAI is a decentralized micro-funding protocol that enables transparent crowdfunding using smart contracts.
+## Current Public Testnet Scope
 
-Campaigns are deployed as independent contracts where contributors send funds directly to the campaign contract.
+- Campaign creation through smart contracts
+- Campaign discovery, sorting, and status filters
+- Campaign detail pages with media, story, progress, backers, and trust context
+- Wallet-based contribution flow
+- Creator claim flow for successful campaigns
+- Contributor refund flow for failed campaigns
+- Trust preview and trust badges
+- Backend campaign feed, summary, metadata, monitoring, and trust APIs
+- Multi-network support for Base Sepolia, Arc Testnet, and Robinhood Testnet
 
-The protocol focuses on human-scale funding between **$50 and $1000**.
+## Repository Layout
 
-## Features
+- `frontend/` - Vite, React, Node trust engine, campaign APIs, frontend app, and subgraph assets
+- `contracts/` - earlier Solidity campaign factory and campaign contracts
+- `docs/` - supporting project documents
 
-- Non-custodial crowdfunding
-- Transparent on-chain contribution tracking
-- USDC based funding
-- Micro-funding limits
-- Permissionless campaign creation
+## Stable Assets
 
-## Architecture
+- Base Sepolia: USDC
+- Arc Testnet: USDC
+- Robinhood Testnet: USDG
 
-Frontend → CampaignFactory → Campaign Contracts → USDC
+## Local Development
 
-## Smart Contracts
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Network: Base Sepolia
+Run the combined trust server:
 
-Factory Contract:
+```bash
+cd frontend
+npm run trust-server
+```
 
-0x1c20832065121f0719fEe423ED1899eb84A784Ab
+Build for production:
 
-## Tech Stack
+```bash
+cd frontend
+npm run build
+```
 
-- Solidity
-- React
-- Wagmi
-- Viem
-- Base Network
-- Vite
+## Production
 
-## Vision
+The deployed app uses a combined Node server that serves both the built Vite app
+and API routes from the same origin.
 
-BaseFundAI aims to become a decentralized micro-funding infrastructure protocol that enables transparent funding for community initiatives and real-life needs.
+Required environment values are documented in `frontend/.env.example`.
