@@ -1,0 +1,63 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: ethereum
+    name: Factory
+    network: base-sepolia
+    source:
+      address: "0xAF9b63f245eF00044FbC5d50c6aB8DC918BD6827"
+      abi: Factory
+      startBlock: 40070668
+
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+
+      entities:
+        - Campaign
+        - CampaignContributor
+
+      abis:
+        - name: Factory
+          file: ./abis/Factory.json
+        - name: Campaign
+          file: ./abis/Campaign.json
+
+      eventHandlers:
+        - event: CampaignCreated(indexed address,indexed address,uint256,uint256,string,bytes32,bytes32)
+          handler: handleCampaignCreated
+
+      file: ./src/mapping.ts
+
+templates:
+  - kind: ethereum
+    name: Campaign
+    network: base-sepolia
+    source:
+      abi: Campaign
+
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+
+      entities:
+        - Campaign
+        - CampaignContributor
+
+      abis:
+        - name: Campaign
+          file: ./abis/Campaign.json
+
+      eventHandlers:
+        - event: Contributed(indexed address,uint256,uint256)
+          handler: handleContributed
+        - event: FundsClaimed(indexed address,uint256)
+          handler: handleFundsClaimed
+        - event: Refunded(indexed address,uint256)
+          handler: handleRefunded
+
+      file: ./src/mapping.ts

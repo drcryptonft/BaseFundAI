@@ -1,0 +1,29 @@
+type Campaign @entity(immutable: false) {
+  id: ID!
+  address: Bytes!
+  goal: BigInt!
+  raised: BigInt!
+  deadline: BigInt!
+  finalized: Boolean!
+  successful: Boolean!
+  stateCode: Int!
+  creator: Bytes!
+  createdAtBlock: BigInt!
+  createdAtTimestamp: BigInt!
+  contributionCount: Int!
+  backerCount: Int!
+  fundsClaimed: Boolean!
+  refundsClaimedCount: Int!
+  contributors: [CampaignContributor!]! @derivedFrom(field: "campaign")
+}
+
+type CampaignContributor @entity(immutable: false) {
+  id: ID!
+  campaign: Campaign!
+  contributor: Bytes!
+  totalContributed: BigInt!
+  contributionCount: Int!
+  refunded: Boolean!
+  refundedAtBlock: BigInt
+  refundedAtTimestamp: BigInt
+}

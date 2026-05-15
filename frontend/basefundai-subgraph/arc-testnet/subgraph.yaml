@@ -1,0 +1,63 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: ethereum
+    name: Factory
+    network: arc-testnet
+    source:
+      address: "0x9727b1E6A0a8c97Cf5AC42322160B1140467B60B"
+      abi: Factory
+      startBlock: 36606552
+
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+
+      entities:
+        - Campaign
+        - CampaignContributor
+
+      abis:
+        - name: Factory
+          file: ./abis/Factory.json
+        - name: Campaign
+          file: ./abis/Campaign.json
+
+      eventHandlers:
+        - event: CampaignCreated(indexed address,indexed address,uint256,uint256,string,bytes32,bytes32)
+          handler: handleCampaignCreated
+
+      file: ./src/mapping.ts
+
+templates:
+  - kind: ethereum
+    name: Campaign
+    network: arc-testnet
+    source:
+      abi: Campaign
+
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+
+      entities:
+        - Campaign
+        - CampaignContributor
+
+      abis:
+        - name: Campaign
+          file: ./abis/Campaign.json
+
+      eventHandlers:
+        - event: Contributed(indexed address,uint256,uint256)
+          handler: handleContributed
+        - event: FundsClaimed(indexed address,uint256)
+          handler: handleFundsClaimed
+        - event: Refunded(indexed address,uint256)
+          handler: handleRefunded
+
+      file: ./src/mapping.ts

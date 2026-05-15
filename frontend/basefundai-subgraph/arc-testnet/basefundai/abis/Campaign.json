@@ -1,0 +1,59 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "campaign",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "contributor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Contribution",
+    "type": "event"
+  }
+]
+
+[
+  { "name": "goal", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+  { "name": "totalRaised", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+  { "name": "deadline", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+  { "name": "creator", "outputs": [{ "type": "address" }], "stateMutability": "view", "type": "function" },
+  { "name": "finalized", "outputs": [{ "type": "bool" }], "stateMutability": "view", "type": "function" },
+  { "name": "successful", "outputs": [{ "type": "bool" }], "stateMutability": "view", "type": "function" },
+  {
+    "name": "contributions",
+    "inputs": [{ "type": "address" }],
+    "outputs": [{ "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  { "name": "contribute", "inputs": [{ "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+  { "name": "finalize", "inputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "name": "claimFunds", "inputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "name": "claimRefund", "inputs": [], "stateMutability": "nonpayable", "type": "function" },
+
+
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "campaign", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "contributor", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "Contribution",
+    "type": "event"
+  }
+]
