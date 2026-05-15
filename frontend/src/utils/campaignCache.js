@@ -1,36 +1,46 @@
-export function saveCampaignCache(data){
+const CACHE_PREFIX = "campaignCacheV2";
+const CACHE_TTL_MS = 60000;
 
-localStorage.setItem(
-"campaignCache",
-JSON.stringify({
-data,
-timestamp: Date.now()
-})
-)
-
+function getCacheKey(chainId) {
+  return `${CACHE_PREFIX}:${chainId || "default"}`;
 }
 
-export function loadCampaignCache(){
+export function saveCampaignCache(data, chainId) {
+  if (typeof window === "undefined") {
+    return;
+  }
 
-const cache = localStorage.getItem("campaignCache")
-
-if(!cache) return null
-
-try{
-
-const parsed = JSON.parse(cache)
-
-// cache expires after 60 seconds
-if(Date.now() - parsed.timestamp > 60000){
-return null
+  try {
+    localStorage.setItem(
+      getCacheKey(chainId),
+      JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      })
+    );
+  } catch {
+    // Ignore storage quota failures and keep the live in-memory state.
+  }
 }
 
-return parsed.data
+export function loadCampaignCache(chainId) {
+  if (typeof window === "undefined") {
+    return null;
+  }
 
-}catch{
+  const cache = localStorage.getItem(getCacheKey(chainId));
 
-return null
+  if (!cache) return null;
 
-}
+  try {
+    const parsed = JSON.parse(cache);
 
+    if (Date.now() - parsed.timestamp > CACHE_TTL_MS) {
+      return null;
+    }
+
+    return parsed.data;
+  } catch {
+    return null;
+  }
 }
