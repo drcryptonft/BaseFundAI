@@ -15,42 +15,35 @@ export function useCampaign(address) {
     address,
     abi: CAMPAIGN_ABI,
     functionName: "goal",
-    watch: true,
+    watch: false,
   });
 
   const raisedQuery = useReadContract({
     address,
     abi: CAMPAIGN_ABI,
     functionName: "totalRaised",
-    watch: true,
+    watch: false,
   });
 
   const deadlineQuery = useReadContract({
     address,
     abi: CAMPAIGN_ABI,
     functionName: "deadline",
-    watch: true,
+    watch: false,
   });
 
   const creatorQuery = useReadContract({
     address,
     abi: CAMPAIGN_ABI,
     functionName: "creator",
-    watch: true,
+    watch: false,
   });
 
-  const finalizedQuery = useReadContract({
+  const stateQuery = useReadContract({
     address,
     abi: CAMPAIGN_ABI,
-    functionName: "finalized",
-    watch: true,
-  });
-
-  const successfulQuery = useReadContract({
-    address,
-    abi: CAMPAIGN_ABI,
-    functionName: "successful",
-    watch: true,
+    functionName: "getState",
+    watch: false,
   });
 
   const contributionQuery = useReadContract({
@@ -58,7 +51,14 @@ export function useCampaign(address) {
     abi: CAMPAIGN_ABI,
     functionName: "contributions",
     args: user ? [user] : undefined,
-    watch: true,
+    watch: false,
+  });
+
+  const claimableAmountQuery = useReadContract({
+    address,
+    abi: CAMPAIGN_ABI,
+    functionName: "claimableAmount",
+    watch: false,
   });
 
   const refetchAll = async () => {
@@ -66,16 +66,16 @@ export function useCampaign(address) {
     await raisedQuery.refetch();
     await deadlineQuery.refetch();
     await creatorQuery.refetch();
-    await finalizedQuery.refetch();
-    await successfulQuery.refetch();
+    await stateQuery.refetch();
+    await claimableAmountQuery.refetch();
     if (user) await contributionQuery.refetch();
   };
 
-  const finalize = async () => {
+  const syncState = async () => {
     const hash = await writeContractAsync({
       address,
       abi: CAMPAIGN_ABI,
-      functionName: "finalize",
+      functionName: "syncState",
     });
     await publicClient.waitForTransactionReceipt({ hash });
     await refetchAll();
@@ -91,27 +91,33 @@ export function useCampaign(address) {
     await refetchAll();
   };
 
-  const claimRefund = async () => {
+  const refund = async () => {
     const hash = await writeContractAsync({
       address,
       abi: CAMPAIGN_ABI,
-      functionName: "claimRefund",
+      functionName: "refund",
     });
     await publicClient.waitForTransactionReceipt({ hash });
     await refetchAll();
   };
+
+  const stateCode = Number(stateQuery.data ?? 0);
+  const finalized = stateCode === 1 || stateCode === 2 || stateCode === 3;
+  const successful = stateCode === 1 || stateCode === 3;
 
   return {
     goal: goalQuery.data,
     raised: raisedQuery.data,
     deadline: deadlineQuery.data,
     creator: creatorQuery.data,
-    finalized: finalizedQuery.data,
-    successful: successfulQuery.data,
+    stateCode,
+    finalized,
+    successful,
     contribution: contributionQuery.data,
-    finalize,
+    claimableAmount: claimableAmountQuery.data,
+    syncState,
     claimFunds,
-    claimRefund,
+    refund,
     refetchAll,
   };
 }

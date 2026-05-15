@@ -6,7 +6,10 @@ const [timeLeft,setTimeLeft] = useState("")
 
 useEffect(()=>{
 
-if(!deadline) return
+if(!deadline){
+setTimeLeft("Time unavailable")
+return
+}
 
 function updateTimer(){
 
