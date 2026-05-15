@@ -1,243 +1,192 @@
-import { useEffect, useState, useMemo } from "react"
-import { publicClient } from "../wagmi"
-import { FACTORY_ADDRESS, FACTORY_ABI, CAMPAIGN_ABI } from "../contracts"
-import { saveCampaignCache, loadCampaignCache } from "../utils/campaignCache"
-import CampaignCard from "./CampaignCard"
+import { useEffect, useState } from "react";
+import { useChainId, usePublicClient } from "wagmi";
 
-export default function CampaignList(){
+import CampaignCardPreview from "./CampaignCardPreview";
+import { useApp } from "../providers/AppProvider";
+import { getGraphClient } from "../graphql/client";
+import { loadActiveChainCampaigns } from "../utils/activeChainCampaigns";
+import { requestCampaignFeed } from "../utils/campaignFeed";
 
-const [campaigns,setCampaigns] = useState([])
-const [campaignData,setCampaignData] = useState([])
-const [filter,setFilter] = useState("ALL")
-const [now,setNow] = useState(Math.floor(Date.now()/1000))
+const EMPTY_COUNTS = {
+  ALL: 0,
+  ACTIVE: 0,
+  SUCCESSFUL: 0,
+  FAILED: 0,
+  SETTLED: 0,
+};
 
-useEffect(()=>{
+function getResolvedLimit(limit, filter) {
+  if (limit) {
+    return limit;
+  }
 
-loadCampaigns()
+  if (filter === "SUCCESSFUL" || filter === "FAILED" || filter === "SETTLED") {
+    return 20;
+  }
 
-const timer = setInterval(()=>{
-setNow(Math.floor(Date.now()/1000))
-},5000)
-
-return ()=>clearInterval(timer)
-
-},[])
-
-
-async function loadCampaigns(){
-
-// try cache first
-const cached = loadCampaignCache()
-
-if(cached){
-
-setCampaignData(cached)
-
-return
-
+  return 24;
 }
 
-try{
+function getResolvedSort(sort, filter) {
+  if (filter === "SUCCESSFUL" || filter === "FAILED" || filter === "SETTLED") {
+    return "NEW";
+  }
 
-
-const result = await publicClient.readContract({
-address: FACTORY_ADDRESS,
-abi: FACTORY_ABI,
-functionName:"getCampaigns"
-})
-
-setCampaigns([...result].reverse())
-
-const reversed = [...result].reverse()
-
-const data = await Promise.all(reversed.map(async(addr)=>{
-
-const goal = await publicClient.readContract({
-address: addr,
-abi: CAMPAIGN_ABI,
-functionName:"goal"
-})
-
-const raised = await publicClient.readContract({
-address: addr,
-abi: CAMPAIGN_ABI,
-functionName:"totalRaised"
-})
-
-const deadline = await publicClient.readContract({
-address: addr,
-abi: CAMPAIGN_ABI,
-functionName:"deadline"
-})
-
-const finalized = await publicClient.readContract({
-address: addr,
-abi: CAMPAIGN_ABI,
-functionName:"finalized"
-})
-
-const successful = await publicClient.readContract({
-address: addr,
-abi: CAMPAIGN_ABI,
-functionName:"successful"
-})
-
-const creator = await publicClient.readContract({
-address: addr,
-abi: CAMPAIGN_ABI,
-functionName:"creator"
-})
-
-
-return{
-address: addr,
-goal: Number(goal),
-raised: Number(raised),
-deadline: Number(deadline),
-finalized,
-successful,
-creator
+  return sort;
 }
 
-}))
+export default function CampaignList({
+  sort = "TRENDING",
+  limit,
+  hideFilters,
+  showTrending = false,
+}) {
+  const { setCampaigns: setAppCampaigns } = useApp() || {};
+  const chainId = useChainId();
+  const publicClient = usePublicClient({ chainId });
+  const graphClient = getGraphClient(chainId);
+  const [campaignData, setCampaignData] = useState([]);
+  const [campaignCounts, setCampaignCounts] = useState(EMPTY_COUNTS);
+  const [trendingCampaigns, setTrendingCampaigns] = useState([]);
+  const [filter, setFilter] = useState("ALL");
 
-saveCampaignCache(data)
-setCampaignData(data)
+  useEffect(() => {
+    let cancelled = false;
 
-}catch(err){
-console.log("Error loading campaigns:",err)
-}
+    async function refreshCampaigns() {
+      try {
+        const response = await requestCampaignFeed({
+          chainId,
+          state: filter,
+          sort: getResolvedSort(sort, filter),
+          limit: getResolvedLimit(limit, filter),
+        });
 
-}
+        if (cancelled || !response) {
+          return;
+        }
 
-function getState(c){
+        const nextItems = Array.isArray(response.items) ? response.items : [];
+        setCampaignData(nextItems);
+        setCampaignCounts(response.counts || EMPTY_COUNTS);
+        setTrendingCampaigns(
+          Array.isArray(response.trending) ? response.trending : []
+        );
 
-if(c.finalized && c.successful){
-return "SUCCESSFUL"
-}
+        if (setAppCampaigns) {
+          setAppCampaigns(nextItems);
+        }
 
-if(c.finalized && !c.successful){
-return "FAILED"
-}
+        return;
+      } catch (error) {
+        console.log("Campaign feed error:", error);
+      }
 
-if(now >= c.deadline && !c.finalized){
-return "AWAITING_FINALIZATION"
-}
+      try {
+        const fallbackCampaigns = await loadActiveChainCampaigns({
+          publicClient,
+          chainId,
+          graphClient,
+        });
 
-if(c.raised >= c.goal && now < c.deadline){
-return "GOAL_REACHED"
-}
+        if (cancelled) {
+          return;
+        }
 
-return "ACTIVE"
+        setCampaignData(Array.isArray(fallbackCampaigns) ? fallbackCampaigns : []);
+        setCampaignCounts({
+          ...EMPTY_COUNTS,
+          ALL: Array.isArray(fallbackCampaigns) ? fallbackCampaigns.length : 0,
+          ACTIVE: Array.isArray(fallbackCampaigns) ? fallbackCampaigns.length : 0,
+        });
+        setTrendingCampaigns(
+          Array.isArray(fallbackCampaigns) ? fallbackCampaigns.slice(0, 3) : []
+        );
 
-}
+        if (setAppCampaigns) {
+          setAppCampaigns(Array.isArray(fallbackCampaigns) ? fallbackCampaigns : []);
+        }
+      } catch (fallbackError) {
+        console.log("Campaign fallback error:", fallbackError);
+      }
+    }
 
-const filtered = useMemo(()=>{
+    void refreshCampaigns();
 
-return campaignData.filter(c=>{
+    const refetch = setInterval(() => {
+      void refreshCampaigns();
+    }, 30000);
 
-const state = getState(c)
+    const handleUpdate = (event) => {
+      if (
+        event?.detail?.chainId &&
+        Number(event.detail.chainId) !== Number(chainId)
+      ) {
+        return;
+      }
 
-if(filter==="ALL") return true
-if(filter==="ACTIVE") return state==="ACTIVE"
-if(filter==="GOAL_REACHED") return state==="GOAL_REACHED"
-if(filter==="AWAITING_FINALIZATION") return state==="AWAITING_FINALIZATION"
-if(filter==="SUCCESSFUL") return state==="SUCCESSFUL"
-if(filter==="FAILED") return state==="FAILED"
+      void refreshCampaigns();
+    };
 
-return true
+    window.addEventListener("campaign-updated", handleUpdate);
 
-})
+    return () => {
+      cancelled = true;
+      clearInterval(refetch);
+      window.removeEventListener("campaign-updated", handleUpdate);
+    };
+  }, [chainId, filter, graphClient, hideFilters, limit, publicClient, setAppCampaigns, sort]);
 
-},
+  return (
+    <div>
+      {!hideFilters && (
+        <>
+          {showTrending && (
+          <div className="mb-10">
+            <h2 className="theme-heading mb-4 flex items-center gap-2 text-xl font-semibold">
+              Trending Campaigns
+              <span className="theme-muted text-xs">(Top performing right now)</span>
+            </h2>
 
-[filter,campaignData,now])
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {trendingCampaigns.map((campaign) => (
+                <div key={campaign.address} className="transition hover:scale-[1.02]">
+                  <CampaignCardPreview campaign={campaign} />
+                </div>
+              ))}
+            </div>
+          </div>
+          )}
 
-return(
+          <div className="mb-6 flex flex-wrap gap-2 overflow-x-auto">
+            {[
+              ["ALL", "All"],
+              ["ACTIVE", "Active"],
+              ["SUCCESSFUL", "Successful"],
+              ["FAILED", "Failed"],
+              ["SETTLED", "Settled"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  filter === key
+                    ? "border-emerald-500 bg-emerald-500 text-white shadow-[0_12px_24px_rgba(16,185,129,0.18)]"
+                    : "border-slate-300 bg-white/90 text-slate-800 hover:border-emerald-300 hover:bg-white dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-100 dark:hover:border-emerald-400/50 dark:hover:bg-slate-800"
+                }`}
+              >
+                {label} ({campaignCounts[key] ?? 0})
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
-<div>
-
-{/* FILTER BUTTONS */}
-
-<div style={{
-display:"flex",
-flexWrap:"wrap",
-gap:"10px",
-marginBottom:"25px"
-}}>
-
-{[
-["ALL","All"],
-["ACTIVE","Active"],
-["GOAL_REACHED","Goal Reached"],
-["AWAITING_FINALIZATION","Awaiting Finalization"],
-["SUCCESSFUL","Successful"],
-["FAILED","Failed"]
-].map(([key,label])=>{
-
-const count = campaignData.filter(c=>getState(c)===key).length
-
-if(key==="ALL") return(
-<button
-key={key}
-onClick={()=>setFilter(key)}
-style={{
-padding:"8px 14px",
-borderRadius:"20px",
-border:"1px solid #e2e8f0",
-background: filter===key ? "#2563eb":"#fff",
-color: filter===key ? "#fff":"#000",
-cursor:"pointer",
-fontWeight:"500"
-}}
->
-{label} ({campaignData.length})
-</button>
-)
-
-return(
-<button
-key={key}
-onClick={()=>setFilter(key)}
-style={{
-padding:"8px 14px",
-borderRadius:"20px",
-border:"1px solid #e2e8f0",
-background: filter===key ? "#2563eb":"#fff",
-color: filter===key ? "#fff":"#000",
-cursor:"pointer",
-fontWeight:"500"
-}}
->
-{label} ({count})
-</button>
-)
-
-})}
-
-</div>
-
-{/* CAMPAIGN GRID */}
-
-<div style={{
-display:"grid",
-gridTemplateColumns:"repeat(auto-fill,minmax(380px,1fr))",
-gap:"30px"
-}}>
-
-{filtered.map(c=>(
-<CampaignCard
-key={c.address}
-campaign={c}
-refreshCampaigns={loadCampaigns}
-/>
-))}
-
-
-</div>
-
-</div>
-
-)
-
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
+        {campaignData.map((campaign) => (
+          <CampaignCardPreview key={campaign.address} campaign={campaign} />
+        ))}
+      </div>
+    </div>
+  );
 }

@@ -5,7 +5,10 @@ import {
   useChainId, 
   useSwitchChain 
 } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import {
+  getDefaultChainUi,
+  isSupportedChain,
+} from "../config/networks";
 
 export default function ConnectWallet() {
   const { address, isConnected } = useAccount();
@@ -13,8 +16,9 @@ export default function ConnectWallet() {
   const { disconnect } = useDisconnect();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
+  const defaultChain = getDefaultChainUi();
 
-  const isCorrectNetwork = chainId === baseSepolia.id;
+  const isCorrectNetwork = isSupportedChain(chainId);
 
   if (!isConnected) {
     return (
@@ -30,10 +34,10 @@ export default function ConnectWallet() {
   if (!isCorrectNetwork) {
     return (
       <button
-        onClick={() => switchChain({ chainId: baseSepolia.id })}
+        onClick={() => switchChain({ chainId: defaultChain.id })}
         className="bg-yellow-500 text-white px-4 py-2 rounded-xl shadow hover:bg-yellow-600 transition"
       >
-        Switch to Base Sepolia
+        Switch to {defaultChain.name}
       </button>
     );
   }
